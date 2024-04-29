@@ -1,9 +1,11 @@
 import os
 import torch
 import numpy as np
+from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
+from segmentation_models_pytorch import utils
 from sklearn.model_selection import train_test_split
-from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation
+from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
 ENCODER = 'resnet34'
@@ -11,11 +13,11 @@ ENCODER_WEIGHTS = 'imagenet'
 CLASSES = ['tumor']
 ACTIVATION = 'sigmoid' 
 DEVICE = 'cuda'
-BATCH_SIZE = 24
+BATCH_SIZE = 48
 EPOCHS = 40
 
 root = '/home/r20user17/Documents/tiles_1024_10x_blackisTumor'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 
 
@@ -36,38 +38,37 @@ if __name__ == '__main__':
     train_slide_ids = [item for item in slide_ids if item.split('-')[0] in train_ids]
     valid_slide_ids = [item for item in slide_ids if item.split('-')[0] in valid_ids]
 
-    train_dataset = Dataset(
+    train_dataset = PatchDataset(
         root, 
         train_slide_ids, 
         augmentation=get_training_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
     )
 
-    valid_dataset = Dataset(
+    valid_dataset = PatchDataset(
         root, 
-        test_slide_ids, 
+        valid_slide_ids, 
         augmentation=get_validation_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
-        classes=CLASSES,
     )
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=12)
     valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
-    loss = smp.utils.losses.DiceLoss()
+    loss = utils.losses.DiceLoss()
     metrics = [
-        smp.utils.metrics.IoU(threshold=0.5),
-        smp.utils.metrics.Fscore(),
-        smp.utils.metrics.Accuracy(),
-        smp.utils.metrics.Precision(),
-        smp.utils.metrics.Recall(),
+        utils.metrics.IoU(threshold=0.5),
+        utils.metrics.Fscore(),
+        utils.metrics.Accuracy(),
+        utils.metrics.Precision(),
+        utils.metrics.Recall(),
     ]
 
     optimizer = torch.optim.Adam([ 
         dict(params=model.parameters(), lr=0.0001),
     ])
 
-    train_epoch = smp.utils.train.TrainEpoch(
+    train_epoch = utils.train.TrainEpoch(
         model, 
         loss=loss, 
         metrics=metrics, 
@@ -76,7 +77,7 @@ if __name__ == '__main__':
         verbose=True,
     )
 
-    valid_epoch = smp.utils.train.ValidEpoch(
+    valid_epoch = utils.train.ValidEpoch(
         model, 
         loss=loss, 
         metrics=metrics, 
