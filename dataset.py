@@ -78,16 +78,20 @@ def get_preprocessing(preprocessing_fn):
 class PatchDataset(Dataset):    
     def __init__(
             self, 
-            data_root, slide_ids,
+            data_root, slide_ids, csv_path=None,
             augmentation=None, 
             preprocessing=None,
     ):
-        df = pd.DataFrame(columns=['slide_id', 'patch_id'])
-        for item in slide_ids:
-            subpath = os.path.join(data_root, 'Images', item)
-            for patch_id in os.listdir(subpath):
-                df = df._append({'slide_id': item, 'patch_id': pathlib.Path(patch_id).stem}, ignore_index=True)
-        self.df =df        
+        if csv_path is None:
+            df = pd.DataFrame(columns=['slide_id', 'patch_id'])
+            for item in slide_ids:
+                subpath = os.path.join(data_root, 'Images', item)
+                for patch_id in os.listdir(subpath):
+                    if patch_id.endswith('.jpeg') and patch_id.startswith('CHS'):
+                        df = df._append({'slide_id': item, 'patch_id': pathlib.Path(patch_id).stem}, ignore_index=True)
+            self.df =df
+        else:
+            self.df = pd.read_csv(csv_path)
         # convert str names to class values on masks
         self.class_values = [0]
         self.data_root = data_root

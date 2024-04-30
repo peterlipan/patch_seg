@@ -17,7 +17,7 @@ BATCH_SIZE = 48
 EPOCHS = 40
 
 root = '/home/r20user17/Documents/tiles_1024_10x_blackisTumor'
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '4'
 
 
 
@@ -32,22 +32,16 @@ if __name__ == '__main__':
 
     preprocessing_fn = smp.encoders.get_preprocessing_fn(ENCODER, ENCODER_WEIGHTS)
 
-    slide_ids = os.listdir(os.path.join(root, 'Images'))
-    patient_ids = list(set([item.split('-')[0] for item in slide_ids]))
-    train_ids, valid_ids = train_test_split(patient_ids, test_size=0.2, random_state=42)
-    train_slide_ids = [item for item in slide_ids if item.split('-')[0] in train_ids]
-    valid_slide_ids = [item for item in slide_ids if item.split('-')[0] in valid_ids]
-
     train_dataset = PatchDataset(
         root, 
-        train_slide_ids, 
+        None, "train.csv", 
         augmentation=get_training_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
     )
 
     valid_dataset = PatchDataset(
         root, 
-        valid_slide_ids, 
+        None, "valid.csv",
         augmentation=get_validation_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
     )
