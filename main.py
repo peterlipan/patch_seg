@@ -8,17 +8,16 @@ from sklearn.model_selection import train_test_split
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
-ENCODER = 'resnet34'
+ENCODER = 'resnet50'
 ENCODER_WEIGHTS = 'imagenet'
 CLASSES = ['tumor']
 ACTIVATION = 'sigmoid' 
 DEVICE = 'cuda'
-BATCH_SIZE = 48
+BATCH_SIZE = 30
 EPOCHS = 40
 
 root = '/home/r20user17/Documents/tiles_1024_10x_blackisTumor'
-os.environ['CUDA_VISIBLE_DEVICES'] = '4'
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '5'
 
 
 if __name__ == '__main__':

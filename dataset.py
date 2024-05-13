@@ -81,6 +81,7 @@ class PatchDataset(Dataset):
             data_root, slide_ids, csv_path=None,
             augmentation=None, 
             preprocessing=None,
+            specific_slide=None
     ):
         if csv_path is None:
             df = pd.DataFrame(columns=['slide_id', 'patch_id'])
@@ -92,6 +93,8 @@ class PatchDataset(Dataset):
             self.df =df
         else:
             self.df = pd.read_csv(csv_path)
+        if specific_slide is not None:
+            self.df = self.df[self.df['slide_id'] == specific_slide]
         # convert str names to class values on masks
         self.class_values = [0]
         self.data_root = data_root
