@@ -8,16 +8,17 @@ from sklearn.model_selection import train_test_split
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
-ENCODER = 'resnet50'
+ENCODER = 'efficientnet-b1'
 ENCODER_WEIGHTS = 'imagenet'
 CLASSES = ['tumor']
 ACTIVATION = 'sigmoid' 
 DEVICE = 'cuda'
-BATCH_SIZE = 30
+BATCH_SIZE = 32
 EPOCHS = 40
 
-root = '/home/r20user17/Documents/tiles_1024_10x_blackisTumor'
-os.environ['CUDA_VISIBLE_DEVICES'] = '5'
+root = '/home/r20user17/Documents/tiles_512_20X_WhiteIsTumor_256overlap'
+class_value = 255
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 if __name__ == '__main__':
@@ -36,6 +37,7 @@ if __name__ == '__main__':
         None, "train.csv", 
         augmentation=get_training_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
+        class_value=class_value,
     )
 
     valid_dataset = PatchDataset(
@@ -43,6 +45,7 @@ if __name__ == '__main__':
         None, "valid.csv",
         augmentation=get_validation_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
+        class_value=class_value,
     )
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=12)
@@ -88,7 +91,7 @@ if __name__ == '__main__':
         # do something (save model, change lr, etc.)
         if max_score < valid_logs['iou_score']:
             max_score = valid_logs['iou_score']
-            torch.save(model, './best_model.pth')
+            torch.save(model, f'unet_{ENCODER}.pth')
             print('Model saved!')
             
         if i == 25:

@@ -81,7 +81,9 @@ class PatchDataset(Dataset):
             data_root, slide_ids, csv_path=None,
             augmentation=None, 
             preprocessing=None,
-            specific_slide=None
+            specific_slide=None,
+            inference=False,
+            class_value=255
     ):
         if csv_path is None:
             df = pd.DataFrame(columns=['slide_id', 'patch_id'])
@@ -96,10 +98,11 @@ class PatchDataset(Dataset):
         if specific_slide is not None:
             self.df = self.df[self.df['slide_id'] == specific_slide]
         # convert str names to class values on masks
-        self.class_values = [0]
+        self.class_values = [class_value]
         self.data_root = data_root
         self.augmentation = augmentation
         self.preprocessing = preprocessing
+        self.inference = inference
     
         
     def __getitem__(self, i):
@@ -124,6 +127,9 @@ class PatchDataset(Dataset):
         if self.preprocessing:
             sample = self.preprocessing(image=image, mask=mask)
             image, mask = sample['image'], sample['mask']
+
+        if self.inference:
+            return image, patch_id
             
         return image, mask
         

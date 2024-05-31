@@ -9,10 +9,10 @@ from sklearn.model_selection import train_test_split
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
-ENCODER = 'resnet34'
+ENCODER = 'efficientnet-b2'
 ENCODER_WEIGHTS = 'imagenet'
 BATCH_SIZE = 96
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 if __name__ == '__main__':
@@ -22,6 +22,7 @@ if __name__ == '__main__':
     valid_csv = pd.read_csv("./valid.csv")
     all_slide_idx = valid_csv['slide_id'].unique()
     preprocessing_fn = smp.encoders.get_preprocessing_fn(ENCODER, ENCODER_WEIGHTS)
+    print(f"Evaluating unet_{ENCODER}.pth on {len(all_slide_idx)} slides...")
     best_model = torch.load(f'unet_{ENCODER}.pth').cuda()
 
     iou = 0
