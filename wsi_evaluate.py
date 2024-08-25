@@ -9,10 +9,10 @@ from sklearn.model_selection import train_test_split
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
-ENCODER = 'efficientnet-b2'
+ENCODER = 'efficientnet-b1'
 ENCODER_WEIGHTS = 'imagenet'
 BATCH_SIZE = 96
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 
 if __name__ == '__main__':
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     precision = 0
     recall = 0
 
-    for specific_id in tqdm(all_slide_idx):
+    for specific_id in tqdm(all_slide_idx, desc="Evaluating slides", position=0):
         valid_dataset = PatchDataset(
             root, 
             None, "valid.csv",
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         total_union = 0
 
         with torch.no_grad():
-            for image, mask in valid_dataloader:
+            for image, mask in tqdm(valid_dataloader, desc="Evaluating batches", position=1, leave=False):
                 image, mask = image.cuda(non_blocking=True), mask.cuda(non_blocking=True)
 
                 preds = best_model(image)

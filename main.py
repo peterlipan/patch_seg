@@ -1,6 +1,7 @@
 import os
 import torch
 import numpy as np
+import pandas as pd
 from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 from segmentation_models_pytorch import utils
@@ -8,25 +9,25 @@ from sklearn.model_selection import train_test_split
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
-ENCODER = 'efficientnet-b1'
+ENCODER = 'resnet18'
 ENCODER_WEIGHTS = 'imagenet'
-CLASSES = ['tumor']
-ACTIVATION = 'sigmoid' 
+ACTIVATION = 'softmax' 
 DEVICE = 'cuda'
-BATCH_SIZE = 32
-EPOCHS = 40
+BATCH_SIZE = 24
+EPOCHS = 100
 
-root = '/home/r20user17/Documents/tiles_512_20X_WhiteIsTumor_256overlap'
-class_value = 255
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+root = '/home/r20user17/Documents/tiles_512_20x_MultiClass'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 
 if __name__ == '__main__':
+    class_color_csv = pd.read_csv('./class_color_idx.csv')
+    classes = class_color_csv['class'].values
     # create segmentation model with pretrained encoder
     model = smp.Unet(
         encoder_name=ENCODER, 
         encoder_weights=ENCODER_WEIGHTS, 
-        classes=1, 
+        classes=len(classes), 
         activation=ACTIVATION,
     )
 
@@ -34,18 +35,18 @@ if __name__ == '__main__':
 
     train_dataset = PatchDataset(
         root, 
-        None, "train.csv", 
+        None, "train_512.csv", 
         augmentation=get_training_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
-        class_value=class_value,
+        class_color_csv=class_color_csv,
     )
 
     valid_dataset = PatchDataset(
         root, 
-        None, "valid.csv",
+        None, "valid_512.csv",
         augmentation=get_validation_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
-        class_value=class_value,
+        class_color_csv=class_color_csv,
     )
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=12)
