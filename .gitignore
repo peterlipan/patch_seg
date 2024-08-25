@@ -11,3 +11,6 @@ vis/
 
 # csv files
 *.csv
+!train.csv
+!valid.csv
+!class_color_idx.csv

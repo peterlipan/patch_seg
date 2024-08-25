@@ -1,0 +1,9 @@
+class,hex,r,g,b,gray
+Tumor,#c80000,200,0,0,59
+Bone,#340b64,52,11,100,33
+Marrow,#51cd08,81,205,8,145
+Normal cartilage,#62d7cd,98,215,205,178
+Dedifferentiated,#ff0000,255,0,0,76
+G1,#eb3f2e,235,63,46,112
+G2,#eb8459,235,132,89,157
+G3,#ebdd32,235,221,50,205
