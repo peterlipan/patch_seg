@@ -1,0 +1,26 @@
+# distributed training
+nodes: 1
+gpus: 7
+nr: 0
+dataparallel: 0
+workers: 8
+visible_gpus: "0,1,2,3,4,5,6"
+
+# Paths
+data_root: "/home/wqzhao/Documents/Max/li/tiles_512_20x_MultiClass_WhiteBackGround"
+train_csv: "./train_multiclass.csv"
+valid_csv: "./valid_multiclass.csv"
+checkpoints: "./checkpoints"
+
+# Model options
+encoder: "resnet18"
+weights: "imagenet"
+act: "softmax"
+
+
+# training options
+batch_size: 48
+epochs: 50
+
+# optimizer options
+lr: 0.0001

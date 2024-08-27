@@ -4,8 +4,8 @@ import pandas as pd
 from tqdm import tqdm
 
 
-img_dir = '/home/r20user17/Documents/tiles_512_20x_MultiClass/Images'
-msk_dir = '/home/r20user17/Documents/tiles_512_20x_MultiClass/Labels'
+img_dir = '/home/wqzhao/Documents/Max/li/tiles_512_20x_MultiClass_WhiteBackGround/Images'
+msk_dir = '/home/wqzhao/Documents/Max/li/tiles_512_20x_MultiClass_WhiteBackGround/Labels'
 
 img_wsi = os.listdir(img_dir)
 msk_wsi = os.listdir(msk_dir)
@@ -16,9 +16,13 @@ exist_train_df = pd.read_csv('train.csv')
 test_slide_idx = exist_test_df['slide_id'].unique()
 train_slide_idx = exist_train_df['slide_id'].unique()
 
+exclud_id = []
+
 # generate the new train.csv
 train_df = pd.DataFrame(columns=['slide_id', 'patch_id'])
 for id in tqdm(train_slide_idx,  desc="Training set", position=0):
+    if id in exclud_id:
+        continue
     subpath = os.path.join(img_dir, id)
     if not os.path.exists(subpath):
         continue
@@ -34,6 +38,8 @@ train_df.to_csv('train_multiclass.csv', index=False)
 # generate the new valid.csv
 valid_df = pd.DataFrame(columns=['slide_id', 'patch_id'])
 for id in tqdm(test_slide_idx, desc="Validation set"):
+    if id in exclud_id:
+        continue
     subpath = os.path.join(img_dir, id)
     if not os.path.exists(subpath):
         continue

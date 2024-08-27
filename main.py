@@ -13,11 +13,11 @@ ENCODER = 'resnet18'
 ENCODER_WEIGHTS = 'imagenet'
 ACTIVATION = 'softmax' 
 DEVICE = 'cuda'
-BATCH_SIZE = 24
-EPOCHS = 100
+BATCH_SIZE = 48
+EPOCHS = 20
 
-root = '/home/r20user17/Documents/tiles_512_20x_MultiClass'
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+root = '/home/wqzhao/Documents/Max/li/tiles_512_20x_MultiClass_WhiteBackGround'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 
 if __name__ == '__main__':
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     train_dataset = PatchDataset(
         root, 
-        None, "train_512.csv", 
+        None, "train_multiclass.csv", 
         augmentation=get_training_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
         class_color_csv=class_color_csv,
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     valid_dataset = PatchDataset(
         root, 
-        None, "valid_512.csv",
+        None, "valid_multiclass.csv",
         augmentation=get_validation_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
         class_color_csv=class_color_csv,
