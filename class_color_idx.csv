@@ -1,4 +1,5 @@
 class,hex,r,g,b,gray
+Soft tissue,#d21504,210,21,4,75
 Tumor,#c80000,200,0,0,59
 Bone,#340b64,52,11,100,33
 Marrow,#51cd08,81,205,8,145
