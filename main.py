@@ -18,11 +18,13 @@ EPOCHS = 20
 
 root = '/home/wqzhao/Documents/Max/li/tiles_512_20x_MultiClass_WhiteBackGround'
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+it_classes = ['Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
+ct_classes = ['Dedifferentiated', 'G1', 'G2', 'G3']
 
 
 if __name__ == '__main__':
     class_color_csv = pd.read_csv('./class_color_idx.csv')
-    classes = class_color_csv['class'].values
+    classes = it_classes if args.task == 'IdentifyTumor' else ct_classes
     # create segmentation model with pretrained encoder
     model = smp.Unet(
         encoder_name=ENCODER, 

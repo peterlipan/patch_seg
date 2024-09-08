@@ -16,6 +16,10 @@ from yaml_config_hook import yaml_config_hook
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
+it_classes = ['Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
+ct_classes = ['Dedifferentiated', 'G1', 'G2', 'G3']
+
+
 def train(epoch, dataloader, model, optimizer, criteria, args):
     model.train()
     if isinstance(dataloader.sampler, DistributedSampler):
@@ -69,7 +73,7 @@ def main(gpu, args):
         torch.cuda.set_device(rank)
 
     class_color_csv = pd.read_csv('./class_color_idx.csv')
-    classes = class_color_csv['class'].values
+    classes = it_classes if args.task == 'IdentifyTumor' else ct_classes
     # create segmentation model with pretrained encoder
     model = smp.Unet(
         encoder_name=args.encoder, 
@@ -86,6 +90,7 @@ def main(gpu, args):
         augmentation=get_training_augmentation(), 
         preprocessing=get_preprocessing(preprocessing_fn),
         class_color_csv=class_color_csv,
+        task=args.task,
     )
     
     if args.world_size > 1:
@@ -106,7 +111,7 @@ def main(gpu, args):
         )
     
     if rank == 0:
-        valid_dataset = PatchDataset(args.data_root, None, args.valid_csv, augmentation=get_validation_augmentation(), preprocessing=get_preprocessing(preprocessing_fn), class_color_csv=class_color_csv,)
+        valid_dataset = PatchDataset(args.data_root, None, args.valid_csv, augmentation=get_validation_augmentation(), preprocessing=get_preprocessing(preprocessing_fn), class_color_csv=class_color_csv, task=args.task,)
         valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True)
     else:
         valid_loader = None
@@ -127,7 +132,7 @@ def main(gpu, args):
 
     if args.world_size > 1:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-        model = DDP(model, device_ids=[gpu])
+        model = DDP(model, device_ids=[gpu], find_unused_parameters=True)
     
     max_score = 0
     for epoch in range(args.epochs):
@@ -140,7 +145,7 @@ def main(gpu, args):
             print(f"\nEpoch {epoch}/{args.epochs} || {s}")
             if max_score < logs['iou_score']:
                 max_score = logs['iou_score']
-                torch.save(model.module, f'unet_{args.encoder}.pth')
+                torch.save(model.module, f'{args.task}_{args.encoder}.pth')
                 print('Model saved!')
         if epoch == 25:
             optimizer.param_groups[0]['lr'] = 1e-5

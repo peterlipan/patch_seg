@@ -84,6 +84,7 @@ class PatchDataset(Dataset):
             specific_slide=None,
             inference=False,
             class_color_csv=None,
+            task = 'IdentifyTumor'
     ):
         if csv_path is None:
             df = pd.DataFrame(columns=['slide_id', 'patch_id'])
@@ -92,7 +93,7 @@ class PatchDataset(Dataset):
                 for patch_id in os.listdir(subpath):
                     if patch_id.endswith('.jpeg') and patch_id.startswith('CHS'):
                         df = df._append({'slide_id': item, 'patch_id': pathlib.Path(patch_id).stem}, ignore_index=True)
-            self.df =df
+            self.df = df
         else:
             self.df = pd.read_csv(csv_path)
         if specific_slide is not None:
@@ -103,8 +104,12 @@ class PatchDataset(Dataset):
         self.preprocessing = preprocessing
         self.inference = inference
 
-        self.class_values = class_color_csv['gray'].values
-
+        it_classes = ['Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
+        ct_classes = ['Dedifferentiated', 'G1', 'G2', 'G3']
+        if task == 'IdentifyTumor':
+            self.class_values = class_color_csv[class_color_csv['class'].isin(it_classes)]['gray'].values
+        elif task == 'ClassifyTumor':
+            self.class_values = class_color_csv[class_color_csv['class'].isin(ct_classes)]['gray'].values
     
     @staticmethod
     def rgb2gray(r, g, b):
