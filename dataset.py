@@ -104,8 +104,8 @@ class PatchDataset(Dataset):
         self.preprocessing = preprocessing
         self.inference = inference
 
-        it_classes = ['Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
-        ct_classes = ['Dedifferentiated', 'G1', 'G2', 'G3']
+        it_classes = ['Background', 'Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
+        ct_classes = ['Background', 'Dedifferentiated', 'G1', 'G2', 'G3']
         if task == 'IdentifyTumor':
             self.class_values = class_color_csv[class_color_csv['class'].isin(it_classes)]['gray'].values
         elif task == 'ClassifyTumor':

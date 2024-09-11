@@ -16,8 +16,8 @@ from yaml_config_hook import yaml_config_hook
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
-it_classes = ['Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
-ct_classes = ['Dedifferentiated', 'G1', 'G2', 'G3']
+it_classes = ['Background', 'Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
+ct_classes = ['Background', 'Dedifferentiated', 'G1', 'G2', 'G3']
 
 
 def train(epoch, dataloader, model, optimizer, criteria, args):
@@ -62,6 +62,16 @@ def valid(dataloader, model, metrics):
     return logs
 
 
+def log_performance(args, iou, acc, f1, precision, recall):
+    df_path = './performance.csv'
+    if not os.path.exists(df_path):
+        df = pd.DataFrame(columns=['task', 'encoder', 'decoder', 'iou', 'acc', 'f1', 'precision', 'recall'])
+    else:
+        df = pd.read_csv(df_path)
+    df = df._append({'task': args.task, 'encoder': args.encoder, 'decoder': args.decoder, 'iou': iou, 'acc': acc, 'f1': f1, 'precision': precision, 'recall': recall}, ignore_index=True)
+    df.to_csv(df_path, index=False)
+
+
 def main(gpu, args):
 
     rank = args.nr * args.gpus + gpu
@@ -75,7 +85,7 @@ def main(gpu, args):
     class_color_csv = pd.read_csv('./class_color_idx.csv')
     classes = it_classes if args.task == 'IdentifyTumor' else ct_classes
     # create segmentation model with pretrained encoder
-    model = smp.Unet(
+    model = getattr(smp, args.decoder)(
         encoder_name=args.encoder, 
         encoder_weights=args.weights, 
         classes=len(classes), 
@@ -135,6 +145,7 @@ def main(gpu, args):
         model = DDP(model, device_ids=[gpu], find_unused_parameters=True)
     
     max_score = 0
+    best_iou, best_acc, best_f1, best_precision, best_recall = 0, 0, 0, 0, 0
     for epoch in range(args.epochs):
         model = train(epoch, train_loader, model, optimizer, criteria, args)
 
@@ -145,16 +156,18 @@ def main(gpu, args):
             print(f"\nEpoch {epoch}/{args.epochs} || {s}")
             if max_score < logs['iou_score']:
                 max_score = logs['iou_score']
-                torch.save(model.module, f'{args.task}_{args.encoder}.pth')
+                best_iou, best_acc, best_f1, best_precision, best_recall = logs['iou_score'], logs['accuracy'], logs['fscore'], logs['precision'], logs['recall']
+                torch.save(model.module, f'{args.task}_{args.encoder}_{args.decoder}.pth')
                 print('Model saved!')
         if epoch == 25:
             optimizer.param_groups[0]['lr'] = 1e-5
             print('Decrease decoder learning rate to 1e-5!')
+    log_performance(args, best_iou, best_acc, best_f1, best_precision, best_recall)
             
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    yaml_config = yaml_config_hook("./config.yaml")
+    yaml_config = yaml_config_hook("./configs/identify.yaml")
     for k, v in yaml_config.items():
         parser.add_argument(f"--{k}", default=v, type=type(v))
     args = parser.parse_args()

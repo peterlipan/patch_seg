@@ -1,0 +1,29 @@
+# distributed training
+nodes: 1
+gpus: 4
+nr: 0
+dataparallel: 0
+workers: 8
+visible_gpus: "0,1,2,3"
+
+# Paths
+data_root: "/home/r20user17/Documents/tiles_512_10x_FourClass_ClassifyTumor"
+train_csv: "./train_ClassifyTumor.csv"
+valid_csv: "./valid_ClassifyTumor.csv"
+checkpoints: "./checkpoints"
+task: "ClassifyTumor"
+
+
+# Model options
+encoder: "resnet50"
+decoder: "UnetPlusPlus"
+weights: "imagenet"
+act: "softmax"
+
+
+# training options
+batch_size: 18
+epochs: 50
+
+# optimizer options
+lr: 0.0001

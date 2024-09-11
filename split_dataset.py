@@ -4,8 +4,8 @@ import pandas as pd
 from tqdm import tqdm
 
 
-img_dir = '/home/wqzhao/Documents/Max/tiles_512_10x_FiveClass_IdentifyTumor/Images'
-msk_dir = '/home/wqzhao/Documents/Max/tiles_512_10x_FiveClass_IdentifyTumor/Labels'
+img_dir = '/home/r20user17/Documents/tiles_512_10x_FourClass_ClassifyTumor/Images'
+msk_dir = '/home/r20user17/Documents/tiles_512_10x_FourClass_ClassifyTumor/Labels'
 
 img_wsi = os.listdir(img_dir)
 msk_wsi = os.listdir(msk_dir)
@@ -35,7 +35,7 @@ for id in tqdm(train_slide_idx,  desc="Training set", position=0):
             if not os.path.exists(msk_path):
                 continue
             train_df = train_df._append({'slide_id': id, 'patch_id': patch_name}, ignore_index=True)
-train_df.to_csv('train_identifyTumor.csv', index=False)
+train_df.to_csv('train_classifyTumor.csv', index=False)
 
 # generate the new valid.csv
 valid_df = pd.DataFrame(columns=['slide_id', 'patch_id'])
@@ -52,5 +52,5 @@ for id in tqdm(test_slide_idx, desc="Validation set"):
             if not os.path.exists(msk_path):
                 continue
             valid_df = valid_df._append({'slide_id': id, 'patch_id': patch_name}, ignore_index=True)
-valid_df.to_csv('valid_identifyTumor.csv', index=False)
+valid_df.to_csv('valid_classifyTumor.csv', index=False)
 
