@@ -12,35 +12,26 @@ def get_training_augmentation():
     train_transform = [
         albu.Resize(height=512, width=512),
         albu.HorizontalFlip(p=0.5),
-
-        albu.ShiftScaleRotate(scale_limit=0.5, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
-        albu.GaussNoise(p=0.2),
-        albu.Perspective(p=0.5),
-
-        albu.OneOf(
-            [
-                albu.CLAHE(p=1),
-                albu.RandomBrightnessContrast(p=1),
-                albu.RandomGamma(p=1),
-            ],
-            p=0.9,
-        ),
+        albu.VerticalFlip(p=0.5),
+        albu.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=45, p=0.5),
 
         albu.OneOf(
             [
                 albu.Blur(blur_limit=3, p=1),
                 albu.MotionBlur(blur_limit=3, p=1),
+                albu.MedianBlur(blur_limit=3, p=1),
             ],
-            p=0.9,
+            p=0.5,
         ),
 
-        albu.OneOf(
-            [
-                albu.RandomBrightnessContrast(p=1),
-                albu.HueSaturationValue(p=1),
-            ],
-            p=0.9,
-        ),
+        albu.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+        albu.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.5),
+        albu.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2, p=0.5),
+        albu.RGBShift(r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
+        
+        albu.GridDropout(ratio=0.5, unit_size_min=64, unit_size_max=128, random_offset=True, fill_value=0, mask_fill_value=0, p=0.5),
+        albu.Normalize(),
+
     ]
     return albu.Compose(train_transform)
 
@@ -48,7 +39,8 @@ def get_training_augmentation():
 def get_validation_augmentation():
     """Add paddings to make image shape divisible by 32"""
     test_transform = [
-        albu.Resize(height=512, width=512)
+        albu.Resize(height=512, width=512),
+        albu.Normalize()
     ]
     return albu.Compose(test_transform)
 

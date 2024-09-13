@@ -7,9 +7,9 @@ workers: 8
 visible_gpus: "0,1,2,3"
 
 # Paths
-data_root: "/home/r20user17/Documents/tiles_512_10x_FiveClass_IdentifyTumor"
-train_csv: "./train_IdentifyTumor.csv"
-valid_csv: "./valid_IdentifyTumor.csv"
+data_root: "/home/wqzhao/Documents/Max/tiles_512_10x_FiveClass_IdentifyTumor"
+train_csv: "./splits/train_IdentifyTumor.csv"
+valid_csv: "./splits/test_IdentifyTumor.csv"
 checkpoints: "./checkpoints"
 task: "IdentifyTumor"
 
@@ -23,7 +23,7 @@ act: "softmax"
 
 # training options
 batch_size: 22
-epochs: 50
+epochs: 25
 
 # optimizer options
 lr: 0.0001

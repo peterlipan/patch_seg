@@ -11,6 +11,6 @@ vis/
 
 # csv files
 *.csv
-!train.csv
-!valid.csv
+!train_set.csv
+!test_set.csv
 !class_color_idx.csv

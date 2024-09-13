@@ -8,8 +8,8 @@ visible_gpus: "0,1,2,3"
 
 # Paths
 data_root: "/home/r20user17/Documents/tiles_512_10x_FourClass_ClassifyTumor"
-train_csv: "./train_ClassifyTumor.csv"
-valid_csv: "./valid_ClassifyTumor.csv"
+train_csv: "./splits/train_ClassifyTumor.csv"
+valid_csv: "./splits/valid_ClassifyTumor.csv"
 checkpoints: "./checkpoints"
 task: "ClassifyTumor"
 

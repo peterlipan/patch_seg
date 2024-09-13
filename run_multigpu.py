@@ -159,10 +159,11 @@ def main(gpu, args):
                 best_iou, best_acc, best_f1, best_precision, best_recall = logs['iou_score'], logs['accuracy'], logs['fscore'], logs['precision'], logs['recall']
                 torch.save(model.module, f'{args.task}_{args.encoder}_{args.decoder}.pth')
                 print('Model saved!')
-        if epoch == 25:
+        if epoch == 15:
             optimizer.param_groups[0]['lr'] = 1e-5
             print('Decrease decoder learning rate to 1e-5!')
-    log_performance(args, best_iou, best_acc, best_f1, best_precision, best_recall)
+    if args.rank == 0:
+        log_performance(args, best_iou, best_acc, best_f1, best_precision, best_recall)
             
 
 if __name__ == '__main__':
