@@ -1,8 +1,8 @@
 # Identify Tumor
 # Unet++
-python3 run_multigpu.py --encoder resnet18 --decoder UnetPlusPlus --batch_size 20
-python3 run_multigpu.py --encoder resnet34 --decoder UnetPlusPlus --batch_size 18
-python3 run_multigpu.py --encoder resnet50 --decoder UnetPlusPlus --batch_size 10
+# python3 run_multigpu.py --encoder resnet18 --decoder UnetPlusPlus --batch_size 20
+# python3 run_multigpu.py --encoder resnet34 --decoder UnetPlusPlus --batch_size 18
+# python3 run_multigpu.py --encoder resnet50 --decoder UnetPlusPlus --batch_size 10
 python3 run_multigpu.py --encoder efficientnet-b0 --decoder UnetPlusPlus --batch_size 20
 python3 run_multigpu.py --encoder efficientnet-b1 --decoder UnetPlusPlus --batch_size 18
 # Unet

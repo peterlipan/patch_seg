@@ -24,14 +24,21 @@ def get_training_augmentation():
             p=0.5,
         ),
 
+        albu.OneOf(
+            [
+                albu.GridDistortion(p=1),
+                albu.ElasticTransform(p=1),
+                albu.OpticalDistortion(p=1),
+            ],
+            p=0.5,
+        ),
+
         albu.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
         albu.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.5),
         albu.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2, p=0.5),
         albu.RGBShift(r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
         
         albu.GridDropout(ratio=0.5, unit_size_min=64, unit_size_max=128, random_offset=True, fill_value=0, mask_fill_value=0, p=0.5),
-        albu.Normalize(),
-
     ]
     return albu.Compose(train_transform)
 
@@ -40,7 +47,6 @@ def get_validation_augmentation():
     """Add paddings to make image shape divisible by 32"""
     test_transform = [
         albu.Resize(height=512, width=512),
-        albu.Normalize()
     ]
     return albu.Compose(test_transform)
 
