@@ -5,6 +5,7 @@ import pathlib
 import numpy as np
 import pandas as pd
 import albumentations as albu
+from utils import RandomImageMaskShuffle
 from torch.utils.data.dataset import Dataset
 
 
@@ -29,8 +30,7 @@ def get_training_augmentation():
         albu.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2, p=0.5),
         albu.RGBShift(r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
         
-        albu.GridDropout(ratio=0.5, unit_size_min=64, unit_size_max=128, random_offset=True, fill_value=0, mask_fill_value=0, p=0.5),
-        albu.Normalize(),
+        # albu.GridDropout(ratio=0.5, unit_size_min=64, unit_size_max=128, random_offset=True, fill_value=255, mask_fill_value=0, p=0.5),
 
     ]
     return albu.Compose(train_transform)
@@ -40,7 +40,6 @@ def get_validation_augmentation():
     """Add paddings to make image shape divisible by 32"""
     test_transform = [
         albu.Resize(height=512, width=512),
-        albu.Normalize()
     ]
     return albu.Compose(test_transform)
 
@@ -95,13 +94,19 @@ class PatchDataset(Dataset):
         self.augmentation = augmentation
         self.preprocessing = preprocessing
         self.inference = inference
+        self.random_shuffle = RandomImageMaskShuffle(size=512, ratio_up=0.8, ratio_low=0.3, p=0.5)
 
         it_classes = ['Background', 'Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal cartilage']
         ct_classes = ['Background', 'Dedifferentiated', 'G1', 'G2', 'G3']
+        class2gray = dict(zip(class_color_csv['class'], class_color_csv['gray']))
+        class2rgb = dict(zip(class_color_csv['class'], zip(class_color_csv['r'], class_color_csv['g'], class_color_csv['b'] )))
+
         if task == 'IdentifyTumor':
-            self.class_values = class_color_csv[class_color_csv['class'].isin(it_classes)]['gray'].values
+            self.class_values = [class2gray[c] for c in it_classes]
+            self.class_rgbs = [class2rgb[c] for c in it_classes]
         elif task == 'ClassifyTumor':
-            self.class_values = class_color_csv[class_color_csv['class'].isin(ct_classes)]['gray'].values
+            self.class_values = [class2gray[c] for c in ct_classes]
+            self.class_rgbs = [class2rgb[c] for c in ct_classes]
     
     @staticmethod
     def rgb2gray(r, g, b):
@@ -115,6 +120,15 @@ class PatchDataset(Dataset):
             patch_id = self.df['patch_id'].values[i]
             image = cv2.imread(os.path.join(self.data_root, 'Images', slide_id, patch_id+'.jpeg'))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            if self.inference:
+                if self.augmentation:
+                    image = self.augmentation(image=image)['image']            
+            
+                # apply preprocessing
+                if self.preprocessing:
+                    image = self.preprocessing(image=image)['image']
+            
+                return image, patch_id
             mask = cv2.imread(os.path.join(self.data_root, 'Labels', slide_id, patch_id+'.png'), 0)
             
             # extract certain classes from mask (e.g. cars)
@@ -125,16 +139,13 @@ class PatchDataset(Dataset):
             # apply augmentations
             if self.augmentation:
                 sample = self.augmentation(image=image, mask=mask)
-                image, mask = sample['image'], sample['mask']
+                image, mask = self.random_shuffle(image=sample['image'], mask=sample['mask'])
         
         
             # apply preprocessing
             if self.preprocessing:
                 sample = self.preprocessing(image=image, mask=mask)
                 image, mask = sample['image'], sample['mask']
-
-            if self.inference:
-                return image, patch_id
             
             return image, mask
 

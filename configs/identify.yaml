@@ -7,7 +7,7 @@ workers: 8
 visible_gpus: "0,1,2,3"
 
 # Paths
-data_root: "/home/wqzhao/Documents/Max/tiles_512_10x_FiveClass_IdentifyTumor"
+data_root: "/home/r20user17/Documents/tiles_512_10x_Task1_Resampled"
 train_csv: "./splits/train_IdentifyTumor.csv"
 valid_csv: "./splits/test_IdentifyTumor.csv"
 checkpoints: "./checkpoints"

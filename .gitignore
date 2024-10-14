@@ -5,9 +5,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
 
 # visualizations
 vis/
+
+wandb/
 
 # csv files
 *.csv

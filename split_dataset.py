@@ -4,8 +4,8 @@ import pandas as pd
 from tqdm import tqdm
 
 
-img_dir = '/home/wqzhao/Documents/Max/tiles_512_10x_FiveClass_IdentifyTumor/Images'
-msk_dir = '/home/wqzhao/Documents/Max/tiles_512_10x_FiveClass_IdentifyTumor/Labels'
+img_dir = '/home/r20user17/Documents/tiles_512_10x_Task1_Resampled/Images'
+msk_dir = '/home/r20user17/Documents/tiles_512_10x_Task1_Resampled/Labels'
 
 img_wsi = os.listdir(img_dir)
 msk_wsi = os.listdir(msk_dir)

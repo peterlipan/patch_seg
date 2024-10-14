@@ -1,4 +1,6 @@
 import os
+import cv2
+import wandb
 import torch
 import argparse
 import numpy as np
@@ -12,7 +14,7 @@ from segmentation_models_pytorch.utils.meter import AverageValueMeter
 from sklearn.model_selection import train_test_split
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
-from yaml_config_hook import yaml_config_hook
+from utils import yaml_config_hook
 from dataset import PatchDataset, get_training_augmentation, get_validation_augmentation, get_preprocessing
 
 
@@ -20,8 +22,19 @@ it_classes = ['Background', 'Soft tissue', 'Tumor', 'Bone', 'Marrow', 'Normal ca
 ct_classes = ['Background', 'Dedifferentiated', 'G1', 'G2', 'G3']
 
 
-def train(epoch, dataloader, model, optimizer, criteria, args):
+def gray2rgb(masks, class_rgbs):
+    # transform the gray-scale masks to RGB
+    # mask: [C, H, W]
+    # class_rgbs: [C, 3]
+    rgb_image = np.zeros((masks.shape[1], masks.shape[2], 3), dtype=np.uint8)
+    for i in range(masks.shape[0]):
+        rgb_image[masks[i, ...] > 0] = class_rgbs[i]
+    return rgb_image
+
+
+def train(epoch, dataloader, model, optimizer, criteria, args, class_rgbs, logger):
     model.train()
+    cur_iter = 0
     if isinstance(dataloader.sampler, DistributedSampler):
         dataloader.sampler.set_epoch(epoch)
     
@@ -34,6 +47,7 @@ def train(epoch, dataloader, model, optimizer, criteria, args):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        cur_iter += 1
 
         if dist.is_available() and dist.is_initialized():
             loss = loss.data.clone()
@@ -41,10 +55,30 @@ def train(epoch, dataloader, model, optimizer, criteria, args):
         
         if args.rank == 0:
             print(f'\rEpoch {epoch}/{args.epochs} || Iter {iters}/{len(dataloader)} || Loss: {loss.item()}', end='', flush=True)
+            if cur_iter % 500 == 1 and logger is not None:
+                wandb_imgs = img.permute(0, 2, 3, 1).detach().cpu().numpy()[:5]
+                wandb_imgs = [(item - np.min(item)) / np.ptp(item) for item in wandb_imgs]
+                wandb_imgs = [cv2.resize(item, (224, 224)) for item in wandb_imgs]
+
+                wandb_masks = label.detach().cpu().numpy()[:5]
+                wandb_masks = [gray2rgb(item, class_rgbs) for item in wandb_masks]
+                wandb_masks = [cv2.resize(item, (224, 224)) for item in wandb_masks]
+
+                wandb_preds = prediction.detach().cpu().numpy()[:5]
+                wandb_preds = [gray2rgb(item, class_rgbs) for item in wandb_preds]
+                wandb_preds = [cv2.resize(item, (224, 224)) for item in wandb_preds]
+
+                logger.log({'Images': [wandb.Image(item) for item in wandb_imgs],
+                            'Masks': [wandb.Image(item) for item in wandb_masks],
+                            'Predictions': [wandb.Image(item) for item in wandb_preds]})
+
+            if cur_iter % 50 == 1 and logger is not None:
+                logger.log({'train_loss': loss.item()})
+                
     return model
 
 
-def valid(dataloader, model, metrics):
+def valid(dataloader, model, metrics, logger):
     model.eval()
     logs = {}
     metrics_meters = {
@@ -59,6 +93,8 @@ def valid(dataloader, model, metrics):
                     metrics_meters[metric_fn.__name__].add(metric_value)
             metrics_logs = {k: v.mean for k, v in metrics_meters.items()}
             logs.update(metrics_logs)
+    if logger is not None:
+        logger.log(logs)
     return logs
 
 
@@ -72,7 +108,10 @@ def log_performance(args, iou, acc, f1, precision, recall):
     df.to_csv(df_path, index=False)
 
 
-def main(gpu, args):
+def main(gpu, args, wandb_logger):
+
+    if gpu != 0:
+        wandb_logger = None
 
     rank = args.nr * args.gpus + gpu
     args.rank = rank
@@ -102,6 +141,7 @@ def main(gpu, args):
         class_color_csv=class_color_csv,
         task=args.task,
     )
+    class_rgbs = train_dataset.class_rgbs
     
     if args.world_size > 1:
             train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -147,17 +187,21 @@ def main(gpu, args):
     max_score = 0
     best_iou, best_acc, best_f1, best_precision, best_recall = 0, 0, 0, 0, 0
     for epoch in range(args.epochs):
-        model = train(epoch, train_loader, model, optimizer, criteria, args)
+        model = train(epoch, train_loader, model, optimizer, criteria, args, class_rgbs, wandb_logger)
 
         if rank == 0:
-            logs = valid(valid_loader, model, metrics)
+            logs = valid(valid_loader, model, metrics, wandb_logger)
             str_logs = ["{} - {:.4}".format(k, v) for k, v in logs.items()]
             s = ", ".join(str_logs)
             print(f"\nEpoch {epoch}/{args.epochs} || {s}")
             if max_score < logs['iou_score']:
                 max_score = logs['iou_score']
                 best_iou, best_acc, best_f1, best_precision, best_recall = logs['iou_score'], logs['accuracy'], logs['fscore'], logs['precision'], logs['recall']
-                torch.save(model.module, f'{args.task}_{args.encoder}_{args.decoder}.pth')
+                model_name = f'{args.task}_{args.encoder}_{args.decoder}.pth'
+                if args.world_size > 1:
+                    torch.save(model.module, os.path.join(args.checkpoints, model_name))
+                else:
+                    torch.save(model, os.path.join(args.checkpoints, model_name))
                 print('Model saved!')
         if epoch == 15:
             optimizer.param_groups[0]['lr'] = 1e-5
@@ -171,19 +215,35 @@ if __name__ == '__main__':
     yaml_config = yaml_config_hook("./configs/identify.yaml")
     for k, v in yaml_config.items():
         parser.add_argument(f"--{k}", default=v, type=type(v))
+    parser.add_argument('--debug', action="store_true", help='debug mode(disable wandb)')
     args = parser.parse_args()
 
     args.world_size = args.gpus * args.nodes
+
+    if not os.path.exists(args.checkpoints):
+        os.makedirs(args.checkpoints)
 
     # Master address for distributed data parallel
     os.environ["CUDA_VISIBLE_DEVICES"] = args.visible_gpus
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12345'
 
+    if not args.debug:
+        wandb.login(key="cb1e7d54d21d9080b46d2b1ae2a13d895770aa29")
+        config = vars(args)
+
+        wandb_logger = wandb.init(
+            project="Patch Segmentation",
+            config=config
+        )
+
+    else:
+        wandb_logger = None
+
     if args.world_size > 1:
         print(
             f"Training with {args.world_size} GPUS, waiting until all processes join before starting training"
         )
-        mp.spawn(main, args=(args,), nprocs=args.world_size, join=True)
+        mp.spawn(main, args=(args, wandb_logger, ), nprocs=args.world_size, join=True)
     else:
-        main(0, args,)
+        main(0, args, wandb_logger,)
