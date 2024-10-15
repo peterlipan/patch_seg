@@ -15,8 +15,8 @@ encoder = 'efficientnet-b1'
 decoder = 'Unet'
 task = 'IdentifyTumor'
 root = '/home/r20user17/Documents/tiles_testing_set_512_x10'
-dst = '/home/r20user17/Documents/Predictions_IdentifyTumor_x10_512_thre_80_b1'
-threshold = 0.8
+dst = '/home/r20user17/Documents/Predictions_IdentifyTumor_x10_512_thre_50_b1'
+threshold = 0.5
 os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 
 

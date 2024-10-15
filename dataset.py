@@ -138,9 +138,9 @@ class PatchDataset(Dataset):
         
             # apply augmentations
             if self.augmentation:
+                # shuffle then augment to make the shuffled part more realistic
+                image, mask = self.random_shuffle(image=image, mask=mask)
                 sample = self.augmentation(image=image, mask=mask)
-                image, mask = self.random_shuffle(image=sample['image'], mask=sample['mask'])
-        
         
             # apply preprocessing
             if self.preprocessing:

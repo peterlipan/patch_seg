@@ -15,13 +15,25 @@ class RandomImageMaskShuffle:
         ratio_low (float): The lower bound of the ratio of the image to be shuffled.
         p (float): The probability of shuffling the images and masks.
     """
-    def __init__(self, size: int, ratio_up: float = 0.8, ratio_low: float = 0.1, p: float = 0.5):
+    def __init__(self, size: int, ratio_up: float = 0.8, ratio_low: float = 0.1, p: float = 0.5, p_bg: float = 0.2):
         self.size = size
         self.ratio_up = ratio_up
         self.ratio_low = ratio_low
         self.p = p
         self.image_cache = None
         self.mask_cache = None
+        self.p_bg = p_bg
+    
+    def _generate_background_image_and_mask(self, num_class) -> (np.ndarray, np.ndarray):
+        # the image-mask that contain the background is not enough so we generate some of them here
+        bg_rgb_low = 226 
+        bg_rgb_up = 255 # based on observation
+        bg_img = np.random.randint(bg_rgb_low, bg_rgb_up, (self.size, self.size, 3), np.uint8)
+        # mask: [H, W, C], C = number of classes
+        # [H, W, 0] = 1 -> background
+        bg_mask = np.zeros((self.size, self.size, num_class), np.uint8)
+        bg_mask[:, :, 0] = 1
+        return bg_img, bg_mask
 
 
     def _generate_random_shape(self) -> np.ndarray:
@@ -52,13 +64,19 @@ class RandomImageMaskShuffle:
 
     def __call__(self, image: np.ndarray, mask: np.ndarray) -> (np.ndarray, np.ndarray):
         """Shuffle the image and mask based on the generated mask."""
+        # mask: [H, W, C], C = number of classes
         if random.random() < self.p:
             if self.image_cache is None and self.mask_cache is None:
-                self.image_cache = image.copy()
-                self.mask_cache = mask.copy()
+                if random.random() < self.p_bg:
+                    self.image_cache, self.mask_cache = self._generate_background_image_and_mask(mask.shape[-1])
+                else:
+                    self.image_cache, self.mask_cache = image.copy(), mask.copy()
             else:
                 random_idx = self._generate_random_shape()
-                temp_image, temp_mask = image.copy(), mask.copy()
+                if random.random() < self.p_bg:
+                    temp_image, temp_mask = self._generate_background_image_and_mask(mask.shape[-1])
+                else:
+                    temp_image, temp_mask = image.copy(), mask.copy()
                 image[random_idx] = self.image_cache[random_idx]
                 mask[random_idx] = self.mask_cache[random_idx]
                 self.image_cache, self.mask_cache = temp_image, temp_mask

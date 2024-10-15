@@ -65,6 +65,8 @@ def train(epoch, dataloader, model, optimizer, criteria, args, class_rgbs, logge
                 wandb_masks = [cv2.resize(item, (224, 224)) for item in wandb_masks]
 
                 wandb_preds = prediction.detach().cpu().numpy()[:5]
+                wandb_preds = [np.argmax(item, axis=0) for item in wandb_preds]
+                wandb_preds = [np.stack([item == i for i in range(len(class_rgbs))], axis=0).astype('float') for item in wandb_preds]
                 wandb_preds = [gray2rgb(item, class_rgbs) for item in wandb_preds]
                 wandb_preds = [cv2.resize(item, (224, 224)) for item in wandb_preds]
 
